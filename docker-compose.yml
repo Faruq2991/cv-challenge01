@@ -1,5 +1,4 @@
-include:
-  - compose.monitoring.yml
+
 services:
   frontend:
     build:
@@ -18,64 +17,64 @@ services:
       context: ./backend
     env_file:
       - backend/.env
-    netowrks:
+    networks:
       - frontend-network
       - backend-network
     depends_on:
       - db
 
-    db:
-      image: postgres:13
-      environment:
-        POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-        POSTGRES_USER: app
-        POSTGRES_DB: app
-      secrets:
-        - postgres_password
-      networks:
-        - backend-network
-      volumes:
-        - postgres_data: /var/lib/postgreql/data
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_USER: app
+      POSTGRES_DB: app
+    secrets:
+      - postgres_password
+    networks:
+      - backend-network
+    volumes:
+      - db_data:/var/lib/postgresql/data
 
+  adminer:
+    image: adminer
+    restart: always
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    networks:
+      - backend-network
 
-    adminer:
-      image: adminer
-      restart: always
-      environment:
-        ADMINER_DEFAULT_SERVER: db
-      networks:
-        - backend-network
-
-    nginx_proxy:
-      image: jc21/nginx-proxy-manager:latest
-      ports:
-        - "80:80"
-        - "443:443"
-        - "8090:81"
-      environment:
-        DB_SQLITE_FILE: "/data/database.sqlite"
-      volumes:
-        - data:/data
-        - letsencrypt:/etc/letsencrypt
-       # - ./nginx/nginx.dev.conf:/data/nginx/custom/http_top.conf
-      restart: always
-      depends_on:
-        - frontend
-        - backend
-        - adminer
-        - prometheus
-        - grafana
-      networks:
-        - frontend-network
-        - backend-network
+  nginx_proxy:
+    image: jc21/nginx-proxy-manager:latest
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8090:81"
+    environment:
+      DB_SQLITE_FILE: "/data/database.sqlite" 
+    volumes:
+      - data:/data
+      - letsencrypt:/etc/letsencrypt
+    restart: always
+    depends_on:
+      - frontend
+      - backend
+      - adminer
+      - prometheus
+      - grafana
+    networks:
+      - frontend-network
+      - backend-network
 
 networks:
-  frontend-network
-  backend-network
+  frontend-network:
+  backend-network:
+
 volumes:
   postgres_data:
-  data:
+  db_data:
   letsencrypt:
+  data:
 
 secrets:
   postgres_password:
